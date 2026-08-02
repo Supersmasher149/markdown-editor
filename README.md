@@ -6,6 +6,8 @@
 
 A local-first Markdown editor for macOS, built with Tauri 2, Rust, React, TypeScript, and CodeMirror 6.
 
+*Yes i know there are already options out there but i wanted one tailored to my current and future needs*
+
 Markdown is the source of truth. This is a plain-text editor with a live preview, not a WYSIWYG editor — what you type is exactly what lands on disk.
 
 It works entirely offline. There are no accounts and no telemetry; the only thing that ever leaves the app is a link you deliberately click, which opens in your browser.
