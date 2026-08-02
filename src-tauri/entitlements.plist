@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  Hardened runtime entitlements.
+
+	  JIT is required because the preview and editor run inside WKWebView, whose
+	  JavaScript engine compiles at runtime. Without this the web view fails to
+	  load once the hardened runtime is enabled.
+
+	  The App Sandbox is deliberately NOT enabled. The editor opens and saves
+	  arbitrary paths the user picks from a native dialog; under the sandbox those
+	  writes would require security-scoped bookmarks, which this version does not
+	  implement. Sandboxing is only mandatory for the Mac App Store, which is not
+	  a target here.
+	-->
+	<key>com.apple.security.cs.allow-jit</key>
+	<true/>
+</dict>
+</plist>

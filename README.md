@@ -80,7 +80,43 @@ Two caveats:
 
   That script builds the disk image with `hdiutil` alone — the app plus the usual `/Applications` drag target — so it needs no GUI permission and works on a CI runner. What it gives up is only cosmetic: no custom background or icon positioning.
 
-- **The build is unsigned.** macOS will refuse to open it on another machine until it is signed and notarized, or until the user right-clicks and chooses Open. Signing is out of scope for this version — see [Tauri's macOS signing guide](https://tauri.app/distribute/sign/macos/) to add it.
+- **Signing is set up, but this build cannot be distributed.** See below.
+
+## Code signing
+
+`scripts/make-dmg.sh` signs the app before packaging it, and signs the disk image too. It uses `$APPLE_SIGNING_IDENTITY` if set, and otherwise picks the only valid identity when there is exactly one:
+
+```bash
+security find-identity -v -p codesigning        # list identities
+APPLE_SIGNING_IDENTITY=<sha1-hash> scripts/make-dmg.sh
+scripts/make-dmg.sh --no-sign                   # package without signing
+```
+
+Prefer the SHA-1 hash over the certificate name. Several certificates can share a name — an expired one and its renewal, for instance — and `codesign` refuses a name that matches more than one.
+
+The identity is deliberately **not** committed to `tauri.conf.json`: it is specific to one developer's keychain and would break the build for anyone else. What is committed is `src-tauri/entitlements.plist`, which enables JIT for the WKWebView JavaScript engine. That is required because Tauri turns on the hardened runtime by default when signing, and the web view will not load without it. The App Sandbox is not enabled — the editor writes to arbitrary user-chosen paths, which would need security-scoped bookmarks under the sandbox.
+
+### Distribution requires more than signing
+
+An **Apple Development** certificate is for local use only. An app signed with one is still rejected by Gatekeeper on other machines:
+
+```
+$ spctl -a -vv "Markdown Editor.app"
+rejected
+origin=Apple Development: ...
+```
+
+Distributing outside the App Store needs, in order:
+
+1. A paid Apple Developer Program membership.
+2. A **Developer ID Application** certificate — a different type from Apple Development.
+3. Signing with it, with the hardened runtime enabled (already the default here).
+4. **Notarization** by Apple via `xcrun notarytool submit --wait`, which an Apple Development certificate cannot satisfy.
+5. Stapling the ticket with `xcrun stapler staple`, so the app validates offline.
+
+Until then, anyone who downloads a release must clear the quarantine flag by hand. Note that macOS 15 removed the old Control-click → Open shortcut for this; users now have to visit System Settings → Privacy & Security and choose **Open Anyway**.
+
+See [Tauri's macOS signing guide](https://tauri.app/distribute/sign/macos/).
 
 ## Keyboard shortcuts
 
@@ -182,7 +218,7 @@ Deliberately **not** granted: `fs:*` (all disk access goes through our own comma
 - **No outline sidebar, backlinks, or document library.**
 - **Files above 32 MB are refused** with a clear message. Performance targets documents up to roughly 500 KB; beyond that, preview updates get noticeably slower because the whole document is re-parsed on each debounced render.
 - **A UTF-8 BOM is stripped on load** and not written back. Non-UTF-8 files are refused rather than guessed at.
-- **The build is unsigned**, so distributing the `.app` requires signing and notarization.
+- **Not distributable yet.** The build is signed for local use, but distribution needs a Developer ID certificate and notarization — see [Code signing](#code-signing).
 - **No automatic updates.**
 
 ## Recommended next features
