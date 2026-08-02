@@ -1,0 +1,585 @@
+/* Application chrome.
+   Preview content is styled separately in components/preview/preview.css. */
+
+:root {
+  --font-ui:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui,
+    sans-serif;
+  --font-mono:
+    ui-monospace, "SF Mono", SFMono-Regular, Menlo, Monaco, "Cascadia Mono",
+    monospace;
+
+  --toolbar-height: 44px;
+  --status-height: 26px;
+  --radius: 6px;
+}
+
+/* Light is the default; the dark block below overrides by data-theme, which
+   useSettings stamps onto <html>. */
+:root,
+:root[data-theme="light"] {
+  --surface: #ffffff;
+  --surface-raised: #f7f7f9;
+  --surface-chrome: #f2f2f4;
+  --border: #e3e3e8;
+  --border-strong: #cfcfd6;
+  --text: #1d1d1f;
+  --text-muted: #6e6e78;
+  --accent: #0b5fa5;
+  --accent-contrast: #ffffff;
+  --danger: #c0392b;
+  --warning: #a8690a;
+  --code-bg: #f0f0f4;
+  --code-block-bg: #fafafc;
+  --shadow: 0 12px 32px rgb(0 0 0 / 18%);
+
+  --hl-comment: #7d8590;
+  --hl-keyword: #a33aa3;
+  --hl-string: #1a7f37;
+  --hl-number: #b3541e;
+  --hl-title: #0b5fa5;
+  --hl-type: #7a4bb5;
+}
+
+:root[data-theme="dark"] {
+  --surface: #1e1f24;
+  --surface-raised: #26272e;
+  --surface-chrome: #2a2b33;
+  --border: #383a44;
+  --border-strong: #4a4c58;
+  --text: #e5e6ea;
+  --text-muted: #9a9daa;
+  --accent: #6aa9ff;
+  --accent-contrast: #10131a;
+  --danger: #ff7b72;
+  --warning: #e3b341;
+  --code-bg: #2c2e37;
+  --code-block-bg: #24262d;
+  --shadow: 0 12px 32px rgb(0 0 0 / 55%);
+
+  --hl-comment: #8b949e;
+  --hl-keyword: #ff7bd5;
+  --hl-string: #a5d6a3;
+  --hl-number: #ffab70;
+  --hl-title: #79c0ff;
+  --hl-type: #d2a8ff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--text);
+  background: var(--surface);
+  /* The window chrome must never scroll; panes scroll individually. */
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.app-shell__body {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ---------- Toolbar ---------- */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: var(--toolbar-height);
+  flex: 0 0 var(--toolbar-height);
+  padding: 0 10px;
+  background: var(--surface-chrome);
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+}
+
+.toolbar__group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.toolbar__spacer {
+  flex: 1;
+}
+
+.toolbar__separator {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+}
+
+.toolbar button {
+  height: 26px;
+  min-width: 28px;
+  padding: 0 9px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: default;
+  white-space: nowrap;
+}
+
+.toolbar button:hover:not(:disabled) {
+  background: var(--surface-raised);
+  border-color: var(--border);
+}
+
+.toolbar button:active:not(:disabled) {
+  background: var(--border);
+}
+
+.toolbar button:disabled {
+  opacity: 0.4;
+}
+
+.toolbar__format--bold {
+  font-weight: 700;
+}
+
+.toolbar__format--italic {
+  font-style: italic;
+  font-family: Georgia, serif;
+}
+
+.toolbar__format--inlineCode {
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+/* Segmented layout switcher */
+.toolbar__group--segmented,
+.segmented {
+  display: flex;
+  padding: 2px;
+  gap: 2px;
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+}
+
+.toolbar__group--segmented button,
+.segmented button {
+  height: 22px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: default;
+}
+
+.toolbar__group--segmented button.is-active,
+.segmented button.is-active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 12%);
+}
+
+/* Overflow formatting menu */
+.toolbar__menu-wrap {
+  position: relative;
+}
+
+.toolbar__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  min-width: 172px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-chrome);
+  box-shadow: var(--shadow);
+}
+
+.toolbar__menu button {
+  justify-content: flex-start;
+  height: 26px;
+  padding: 0 10px;
+  text-align: left;
+  font-size: 12.5px;
+}
+
+/* ---------- Split view ---------- */
+
+.split-view {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+}
+
+.split-pane {
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.split-pane[hidden] {
+  display: none;
+}
+
+/* The preview takes whatever the editor does not, so only the editor needs an
+   explicit width during a drag. */
+.split-pane--preview {
+  flex: 1;
+  border-left: 1px solid var(--border);
+}
+
+.split-pane--editor {
+  flex: 0 0 auto;
+}
+
+/* With the editor hidden, the preview is the only pane and needs no divider
+   line down its left edge. */
+.split-pane--editor[hidden] ~ .split-pane--preview {
+  border-left: none;
+}
+
+.split-divider {
+  flex: 0 0 6px;
+  margin: 0 -3px;
+  z-index: 10;
+  cursor: col-resize;
+  background: transparent;
+}
+
+.split-divider:hover,
+.split-divider:focus-visible {
+  background: var(--accent);
+  opacity: 0.5;
+  outline: none;
+}
+
+/* While dragging, stop the panes from swallowing pointer events or selecting
+   text under the cursor. */
+.split-view.is-dragging {
+  cursor: col-resize;
+  user-select: none;
+}
+
+.split-view.is-dragging .split-pane {
+  pointer-events: none;
+}
+
+/* ---------- Editor ---------- */
+
+.editor-host {
+  height: 100%;
+  overflow: hidden;
+}
+
+.editor-host .cm-editor {
+  height: 100%;
+  font-family: var(--font-mono);
+}
+
+.editor-host .cm-scroller {
+  overflow: auto;
+  font-family: inherit;
+}
+
+.editor-host .cm-content {
+  padding: 12px 0 40vh;
+}
+
+.editor-host .cm-line {
+  padding: 0 14px;
+}
+
+.editor-host .cm-editor.cm-focused {
+  outline: none;
+}
+
+/* ---------- Status bar ---------- */
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: var(--status-height);
+  flex: 0 0 var(--status-height);
+  padding: 0 12px;
+  background: var(--surface-chrome);
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 11px;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.status-bar__spacer {
+  flex: 1;
+}
+
+.status-bar__state--dirty {
+  color: var(--warning);
+}
+
+.status-bar__state--busy {
+  color: var(--accent);
+}
+
+.status-bar__state--error {
+  color: var(--danger);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 45%;
+}
+
+.status-bar__dismiss {
+  height: 16px;
+  padding: 0 5px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--danger);
+  font-size: 10px;
+  cursor: default;
+}
+
+.status-bar__dismiss:hover {
+  background: var(--surface-raised);
+}
+
+.status-bar__metric {
+  font-variant-numeric: tabular-nums;
+}
+
+.status-bar__file {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 28ch;
+  color: var(--text);
+}
+
+/* ---------- Modals ---------- */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgb(0 0 0 / 32%);
+}
+
+.modal {
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
+  border-radius: 12px;
+  background: var(--surface-chrome);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+
+.modal--confirm {
+  width: min(420px, 100%);
+  padding: 20px 22px 16px;
+  text-align: center;
+}
+
+.modal--confirm h2 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.modal--confirm p {
+  margin: 0 0 18px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.modal--settings {
+  width: min(480px, 100%);
+}
+
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal__header h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.modal__header button {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 12px;
+  background: var(--surface-raised);
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: default;
+}
+
+.modal__body {
+  padding: 4px 18px 12px;
+  overflow-y: auto;
+}
+
+.modal__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+}
+
+.modal--confirm .modal__actions {
+  padding: 0;
+}
+
+.modal__actions-spacer {
+  flex: 1;
+}
+
+.modal__actions button,
+.modal--settings .modal__actions button {
+  height: 28px;
+  padding: 0 15px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12.5px;
+  cursor: default;
+}
+
+.modal__actions button:hover {
+  background: var(--surface-raised);
+}
+
+.button--primary {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: var(--accent-contrast) !important;
+  font-weight: 550;
+}
+
+.button--danger {
+  color: var(--danger) !important;
+}
+
+/* ---------- Settings ---------- */
+
+.settings__section {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings__section:last-child {
+  border-bottom: none;
+}
+
+.settings__section h3 {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.settings__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 32px;
+  padding: 3px 0;
+}
+
+.settings__label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12.5px;
+}
+
+.settings__hint {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.settings__control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings__value {
+  min-width: 46px;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.settings__row input[type="range"] {
+  width: 140px;
+  accent-color: var(--accent);
+}
+
+.settings__row input[type="number"] {
+  width: 58px;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12.5px;
+}
+
+.settings__row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
+/* ---------- Focus ---------- */
+
+button:focus-visible,
+input:focus-visible,
+[role="separator"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
