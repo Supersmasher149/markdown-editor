@@ -69,7 +69,17 @@ npm run tauri build -- --bundles app
 
 Two caveats:
 
-- **DMG packaging needs Finder automation.** Tauri's `bundle_dmg.sh` drives Finder over AppleScript to lay out the disk image window. In a terminal without Automation permission — a CI runner, or a shell that cannot show the macOS consent prompt — that step hangs or fails and the build reports `error running bundle_dmg.sh`, *after* the `.app` has already been written successfully. Either grant the terminal Automation access under System Settings → Privacy & Security → Automation, or use `--bundles app`.
+- **DMG packaging needs Finder automation.** Tauri's `bundle_dmg.sh` drives Finder over AppleScript to lay out the disk image window. In a terminal without Automation permission — a CI runner, or a shell that cannot show the macOS consent prompt — that step fails with `-1743: Not authorized to send Apple events to Finder`, and the build reports `error running bundle_dmg.sh` and exits, *after* the `.app` has already been written successfully.
+
+  Either grant the terminal Automation access under System Settings → Privacy & Security → Automation (enable **Finder** for your terminal; if it was denied once, `tccutil reset AppleEvents` makes it prompt again), or sidestep Finder entirely:
+
+  ```bash
+  scripts/make-dmg.sh           # package the .app already in target/
+  scripts/make-dmg.sh --build   # build the .app first, then package it
+  ```
+
+  That script builds the disk image with `hdiutil` alone — the app plus the usual `/Applications` drag target — so it needs no GUI permission and works on a CI runner. What it gives up is only cosmetic: no custom background or icon positioning.
+
 - **The build is unsigned.** macOS will refuse to open it on another machine until it is signed and notarized, or until the user right-clicks and chooses Open. Signing is out of scope for this version — see [Tauri's macOS signing guide](https://tauri.app/distribute/sign/macos/) to add it.
 
 ## Keyboard shortcuts
