@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
 import {
   open as openDialog,
   save as saveDialog,
@@ -83,12 +84,61 @@ export function readFile(path: string): Promise<FileReadResult> {
   return invoke<FileReadResult>("read_markdown_file", { path });
 }
 
+/** A file drag over or dropped onto the window. */
+export type FileDropEvent =
+  { type: "hover" } | { type: "drop"; path: string } | { type: "cancel" };
+
+/**
+ * Listen for files dragged onto the window.
+ *
+ * This is the native OS-level drop (`dragDropEnabled: true` in
+ * `tauri.conf.json`), which delivers a real filesystem path rather than a
+ * browser `File`. That path is handed to the same `readFile` used by the Open
+ * panel. The window setting also disables the webview's own HTML5
+ * drag-and-drop, which is the trade-off for getting real paths here.
+ *
+ * Resolves to an unlisten function; callers must invoke it when done.
+ */
+export function onFileDrop(
+  handler: (event: FileDropEvent) => void,
+): Promise<() => void> {
+  return getCurrentWebview().onDragDropEvent((event) => {
+    switch (event.payload.type) {
+      case "enter":
+      case "over":
+        handler({ type: "hover" });
+        break;
+      case "drop": {
+        // Only one document is ever open at a time, so a multi-file drop
+        // opens just the first path and ignores the rest.
+        const path = event.payload.paths[0];
+        handler(path ? { type: "drop", path } : { type: "cancel" });
+        break;
+      }
+      case "leave":
+        handler({ type: "cancel" });
+        break;
+    }
+  });
+}
+
 export function writeFile(path: string, content: string): Promise<void> {
   return invoke<void>("write_markdown_file", { path, content });
 }
 
 export function revealInFileManager(path: string): Promise<void> {
   return invoke<void>("reveal_in_file_manager", { path });
+}
+
+/**
+ * Opens the native print dialog for the rendered preview.
+ *
+ * Goes through wry's native bridge rather than calling `window.print()`
+ * directly - the JS call does not reliably reach WKWebView's print machinery
+ * inside a chrome-less, embedded webview like Tauri's.
+ */
+export function printDocument(): Promise<void> {
+  return invoke<void>("print_document");
 }
 
 /** Returns the raw stored JSON; validation is the settings store's job. */

@@ -13,6 +13,7 @@ It works entirely offline. There are no accounts and no telemetry; the only thin
 ## Features
 
 - Create, open, edit, and save `.md`, `.markdown`, and `.txt` files
+- Drag a file onto the window to open it, same as File → Open
 - Markdown syntax highlighting, line numbers, bracket matching, multiple selections, search, and undo/redo
 - Live rendered preview with syntax-highlighted code blocks, tables, and task lists
 - Editor-only, split, and preview-only layouts with a draggable divider
@@ -218,6 +219,7 @@ Deliberately **not** granted: `fs:*` (all disk access goes through our own comma
 - **No outline sidebar, backlinks, or document library.**
 - **Files above 32 MB are refused** with a clear message. Performance targets documents up to roughly 500 KB; beyond that, preview updates get noticeably slower because the whole document is re-parsed on each debounced render.
 - **A UTF-8 BOM is stripped on load** and not written back. Non-UTF-8 files are refused rather than guessed at.
+- **Dragging text within the editor no longer moves it.** Window-level file drop (`dragDropEnabled: true`) and the browser's own HTML5 drag-and-drop are mutually exclusive in Tauri; enabling the former to open files by drag gave up CodeMirror's drag-to-move-selection and its drop-cursor indicator.
 - **Not distributable yet.** The build is signed for local use, but distribution needs a Developer ID certificate and notarization — see [Code signing](#code-signing).
 - **No automatic updates.**
 

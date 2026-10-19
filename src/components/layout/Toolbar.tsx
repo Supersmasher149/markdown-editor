@@ -12,6 +12,7 @@ type ToolbarProps = {
   onLayoutChange: (layout: LayoutMode) => void;
   onFormat: (format: FormatName) => void;
   onReveal: () => void;
+  onPrint: () => void;
   onOpenSettings: () => void;
 };
 
@@ -60,6 +61,7 @@ export function Toolbar({
   onLayoutChange,
   onFormat,
   onReveal,
+  onPrint,
   onOpenSettings,
 }: ToolbarProps) {
   const [isMenuOpen, setMenuOpen] = useState(false);
@@ -186,6 +188,9 @@ export function Toolbar({
           }
         >
           Reveal
+        </button>
+        <button type="button" onClick={onPrint} title="Print / Save as PDF  ⌘P">
+          Print
         </button>
         <button type="button" onClick={onOpenSettings} title="Settings  ⌘,">
           ⚙

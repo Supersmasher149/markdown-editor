@@ -19,9 +19,12 @@ type UiState = {
   layout: LayoutMode;
   isSettingsOpen: boolean;
   confirmRequest: ConfirmRequest | null;
+  /** True while a file is being dragged over the window. */
+  isDragActive: boolean;
 
   setLayout: (layout: LayoutMode) => void;
   setSettingsOpen: (open: boolean) => void;
+  setDragActive: (active: boolean) => void;
 
   /**
    * Ask the user what to do about unsaved changes.
@@ -37,9 +40,11 @@ export const useUiStore = create<UiState>((set, get) => ({
   layout: "split",
   isSettingsOpen: false,
   confirmRequest: null,
+  isDragActive: false,
 
   setLayout: (layout) => set({ layout }),
   setSettingsOpen: (isSettingsOpen) => set({ isSettingsOpen }),
+  setDragActive: (isDragActive) => set({ isDragActive }),
 
   requestDiscardChoice: (fileName) => {
     if (get().confirmRequest !== null) return Promise.resolve("cancel");

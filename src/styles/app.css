@@ -380,6 +380,31 @@ body {
   color: var(--text);
 }
 
+/* ---------- Drop overlay ---------- */
+
+.drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgb(0 0 0 / 24%);
+  pointer-events: none;
+}
+
+.drop-overlay__panel {
+  padding: 16px 28px;
+  border: 2px dashed var(--accent);
+  border-radius: 12px;
+  background: var(--surface-chrome);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
 /* ---------- Modals ---------- */
 
 .modal-backdrop {
@@ -573,6 +598,43 @@ body {
   width: 16px;
   height: 16px;
   accent-color: var(--accent);
+}
+
+/* ---------- Print ---------- */
+
+/* Printing (including "Save as PDF" from the system print dialog) always
+   prints the rendered preview, never the raw Markdown or app chrome - even
+   when the current layout is editor-only, since the preview pane stays
+   mounted underneath and only needs to be un-hidden. */
+@media print {
+  body {
+    overflow: visible;
+    background: #ffffff;
+  }
+
+  .toolbar,
+  .status-bar,
+  .split-divider,
+  .split-pane--editor,
+  .drop-overlay,
+  .modal-backdrop {
+    display: none !important;
+  }
+
+  .app-shell,
+  .app-shell__body,
+  .split-view {
+    display: block;
+    height: auto;
+    overflow: visible;
+  }
+
+  .split-pane--preview {
+    display: block !important;
+    height: auto;
+    overflow: visible;
+    border-left: none;
+  }
 }
 
 /* ---------- Focus ---------- */

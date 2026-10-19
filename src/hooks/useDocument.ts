@@ -49,6 +49,19 @@ export function useDocument() {
     useDocumentStore.getState().reset();
   }, [confirmSafeToReplace]);
 
+  /** Load the file at `path`, replacing the active document. */
+  const openPath = useCallback(
+    async (path: string): Promise<void> => {
+      try {
+        const file = await fileService.readFile(path);
+        useDocumentStore.getState().loadFromDisk(file);
+      } catch (thrown) {
+        setError(fileService.toAppError(thrown));
+      }
+    },
+    [setError],
+  );
+
   const openFile = useCallback(async (): Promise<void> => {
     if (!(await confirmSafeToReplace())) return;
 
@@ -56,13 +69,17 @@ export function useDocument() {
     // A cancelled dialog is a normal outcome, not an error to report.
     if (!path) return;
 
-    try {
-      const file = await fileService.readFile(path);
-      useDocumentStore.getState().loadFromDisk(file);
-    } catch (thrown) {
-      setError(fileService.toAppError(thrown));
-    }
-  }, [confirmSafeToReplace, setError]);
+    await openPath(path);
+  }, [confirmSafeToReplace, openPath]);
+
+  /** Open a file dropped onto the window, protecting unsaved work first. */
+  const openDroppedFile = useCallback(
+    async (path: string): Promise<void> => {
+      if (!(await confirmSafeToReplace())) return;
+      await openPath(path);
+    },
+    [confirmSafeToReplace, openPath],
+  );
 
   /** Close the active document, returning to an empty untitled buffer. */
   const closeDocument = useCallback(async (): Promise<void> => {
@@ -81,14 +98,24 @@ export function useDocument() {
     }
   }, [setError]);
 
+  const printDocument = useCallback(async (): Promise<void> => {
+    try {
+      await fileService.printDocument();
+    } catch (thrown) {
+      setError(fileService.toAppError(thrown));
+    }
+  }, [setError]);
+
   return {
     document,
     newDocument,
     openFile,
+    openDroppedFile,
     save,
     saveAs,
     closeDocument,
     revealInFinder,
+    printDocument,
     confirmSafeToReplace,
   };
 }

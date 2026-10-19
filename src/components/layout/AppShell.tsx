@@ -13,6 +13,7 @@ import { useSettings } from "../../hooks/useSettings";
 import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
 import { useWindowTitle } from "../../hooks/useWindowTitle";
 import { useCloseProtection } from "../../hooks/useCloseProtection";
+import { useFileDrop } from "../../hooks/useFileDrop";
 import { useDocumentStore } from "../../stores/documentStore";
 import { useUiStore } from "../../stores/uiStore";
 import type { DocumentStats } from "../../types";
@@ -32,8 +33,16 @@ const EMPTY_STATS: DocumentStats = {
  */
 export function AppShell() {
   const { settings, isLoaded, theme, update, reset } = useSettings();
-  const { document, newDocument, openFile, save, saveAs, revealInFinder } =
-    useDocument();
+  const {
+    document,
+    newDocument,
+    openFile,
+    openDroppedFile,
+    save,
+    saveAs,
+    revealInFinder,
+    printDocument,
+  } = useDocument();
 
   const setContent = useDocumentStore((state) => state.setContent);
   const error = useDocumentStore((state) => state.error);
@@ -43,6 +52,7 @@ export function AppShell() {
   const setLayout = useUiStore((state) => state.setLayout);
   const isSettingsOpen = useUiStore((state) => state.isSettingsOpen);
   const setSettingsOpen = useUiStore((state) => state.setSettingsOpen);
+  const isDragActive = useUiStore((state) => state.isDragActive);
   const confirmRequest = useUiStore((state) => state.confirmRequest);
   const resolveDiscardChoice = useUiStore(
     (state) => state.resolveDiscardChoice,
@@ -53,6 +63,7 @@ export function AppShell() {
 
   useWindowTitle(document);
   useCloseProtection();
+  useFileDrop(openDroppedFile);
 
   // Adopt the stored layout once, when settings finish loading. Later changes
   // to `defaultLayout` come from the user switching layouts, and re-applying
@@ -83,11 +94,16 @@ export function AppShell() {
     editorViewRef.current = view;
   }, []);
 
+  const handlePrint = useCallback(() => {
+    void printDocument();
+  }, [printDocument]);
+
   useKeyboardShortcuts({
     onNew: () => void newDocument(),
     onOpen: () => void openFile(),
     onSave: () => void save(),
     onSaveAs: () => void saveAs(),
+    onPrint: handlePrint,
     onToggleSettings: () => setSettingsOpen(!isSettingsOpen),
   });
 
@@ -103,6 +119,7 @@ export function AppShell() {
         onLayoutChange={handleLayoutChange}
         onFormat={handleFormat}
         onReveal={() => void revealInFinder()}
+        onPrint={handlePrint}
         onOpenSettings={() => setSettingsOpen(true)}
       />
 
@@ -132,6 +149,12 @@ export function AppShell() {
         error={error}
         onDismissError={() => setError(null)}
       />
+
+      {isDragActive && (
+        <div className="drop-overlay" aria-hidden="true">
+          <div className="drop-overlay__panel">Drop to open</div>
+        </div>
+      )}
 
       {confirmRequest && (
         <ConfirmDialog

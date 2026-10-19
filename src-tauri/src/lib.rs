@@ -22,6 +22,7 @@ pub fn run() {
             commands::files::reveal_in_file_manager,
             commands::settings::load_settings,
             commands::settings::save_settings,
+            commands::window::print_document,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
