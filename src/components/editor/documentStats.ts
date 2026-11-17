@@ -49,6 +49,15 @@ export function countWords(markdown: string): number {
   return count;
 }
 
+/** Progress toward a word goal; `ratio` is clamped to 0..1 for display. */
+export function goalProgress(
+  words: number,
+  goal: number,
+): { ratio: number; reached: boolean } | null {
+  if (goal <= 0) return null;
+  return { ratio: Math.min(1, words / goal), reached: words >= goal };
+}
+
 /** Character count of the raw source, matching what the editor holds. */
 export function countCharacters(markdown: string): number {
   return markdown.length;

@@ -15,9 +15,16 @@ It works entirely offline. There are no accounts and no telemetry; the only thin
 ## Features
 
 - Create, open, edit, and save `.md`, `.markdown`, and `.txt` files
+- Drag a file onto the window to open it, same as File → Open
+- Open Recent menu (the ▾ beside Open) with the last ten files
+- Reopens the last file on launch, with the cursor where you left it
 - Markdown syntax highlighting, line numbers, bracket matching, multiple selections, search, and undo/redo
 - Live rendered preview with syntax-highlighted code blocks, tables, and task lists
 - Editor-only, split, and preview-only layouts with a draggable divider
+- Synced scrolling between editor and preview in split view (View ▾ → Sync Scrolling, on by default)
+- Paste a URL over selected text to turn it into a Markdown link
+- Insert today's date or a date-time stamp
+- Optional word goal with a progress bar in the status bar
 - Formatting commands for bold, italic, inline code, links, headings, blockquotes, lists, task lists, code blocks, and horizontal rules
 - Unsaved-change protection when creating, opening, or closing
 - Light, dark, and system themes; configurable font size, tab size, soft wrapping, and line numbers
@@ -82,7 +89,43 @@ Two caveats:
 
   That script builds the disk image with `hdiutil` alone — the app plus the usual `/Applications` drag target — so it needs no GUI permission and works on a CI runner. What it gives up is only cosmetic: no custom background or icon positioning.
 
-- **The build is unsigned.** macOS will refuse to open it on another machine until it is signed and notarized, or until the user right-clicks and chooses Open. Signing is out of scope for this version — see [Tauri's macOS signing guide](https://tauri.app/distribute/sign/macos/) to add it.
+- **Signing is set up, but this build cannot be distributed.** See below.
+
+## Code signing
+
+`scripts/make-dmg.sh` signs the app before packaging it, and signs the disk image too. It uses `$APPLE_SIGNING_IDENTITY` if set, and otherwise picks the only valid identity when there is exactly one:
+
+```bash
+security find-identity -v -p codesigning        # list identities
+APPLE_SIGNING_IDENTITY=<sha1-hash> scripts/make-dmg.sh
+scripts/make-dmg.sh --no-sign                   # package without signing
+```
+
+Prefer the SHA-1 hash over the certificate name. Several certificates can share a name — an expired one and its renewal, for instance — and `codesign` refuses a name that matches more than one.
+
+The identity is deliberately **not** committed to `tauri.conf.json`: it is specific to one developer's keychain and would break the build for anyone else. What is committed is `src-tauri/entitlements.plist`, which enables JIT for the WKWebView JavaScript engine. That is required because Tauri turns on the hardened runtime by default when signing, and the web view will not load without it. The App Sandbox is not enabled — the editor writes to arbitrary user-chosen paths, which would need security-scoped bookmarks under the sandbox.
+
+### Distribution requires more than signing
+
+An **Apple Development** certificate is for local use only. An app signed with one is still rejected by Gatekeeper on other machines:
+
+```
+$ spctl -a -vv "Markdown Editor.app"
+rejected
+origin=Apple Development: ...
+```
+
+Distributing outside the App Store needs, in order:
+
+1. A paid Apple Developer Program membership.
+2. A **Developer ID Application** certificate — a different type from Apple Development.
+3. Signing with it, with the hardened runtime enabled (already the default here).
+4. **Notarization** by Apple via `xcrun notarytool submit --wait`, which an Apple Development certificate cannot satisfy.
+5. Stapling the ticket with `xcrun stapler staple`, so the app validates offline.
+
+Until then, anyone who downloads a release must clear the quarantine flag by hand. Note that macOS 15 removed the old Control-click → Open shortcut for this; users now have to visit System Settings → Privacy & Security and choose **Open Anyway**.
+
+See [Tauri's macOS signing guide](https://tauri.app/distribute/sign/macos/).
 
 ## Keyboard shortcuts
 
@@ -102,6 +145,8 @@ Two caveats:
 | `⌘⇧1` … `⌘⇧3` | Heading 1–3 |
 | `⌘⇧8` / `⌘⇧7` | Bullet / numbered list |
 | `⌘⇧.` | Blockquote |
+| `⌘⇧D` | Insert date (`2026-11-17`) |
+| `⌥⌘⇧D` | Insert date and time (`2026-11-17 14:32`) |
 
 File-level shortcuts are bound on the window so they work regardless of focus. Editing shortcuts belong to CodeMirror. No standard system shortcut is overridden.
 
@@ -184,7 +229,8 @@ Deliberately **not** granted: `fs:*` (all disk access goes through our own comma
 - **No outline sidebar, backlinks, or document library.**
 - **Files above 32 MB are refused** with a clear message. Performance targets documents up to roughly 500 KB; beyond that, preview updates get noticeably slower because the whole document is re-parsed on each debounced render.
 - **A UTF-8 BOM is stripped on load** and not written back. Non-UTF-8 files are refused rather than guessed at.
-- **The build is unsigned**, so distributing the `.app` requires signing and notarization.
+- **Dragging text within the editor no longer moves it.** Window-level file drop (`dragDropEnabled: true`) and the browser's own HTML5 drag-and-drop are mutually exclusive in Tauri; enabling the former to open files by drag gave up CodeMirror's drag-to-move-selection and its drop-cursor indicator.
+- **Not distributable yet.** The build is signed for local use, but distribution needs a Developer ID certificate and notarization — see [Code signing](#code-signing).
 - **No automatic updates.**
 
 ## Recommended next features
@@ -202,7 +248,7 @@ Roughly in order of value relative to effort:
 
 ## Testing
 
-125 frontend tests and 19 Rust tests, focused on the parts where a mistake is expensive rather than on line coverage:
+156 frontend tests and 19 Rust tests, focused on the parts where a mistake is expensive rather than on line coverage:
 
 - Dirty-state derivation and store transitions, including the case where the user keeps typing during a save
 - Word and character counting against Markdown syntax

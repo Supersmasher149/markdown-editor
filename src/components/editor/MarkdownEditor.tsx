@@ -27,6 +27,10 @@ type MarkdownEditorProps = {
   onChange: (content: string) => void;
   onStatsChange: (stats: DocumentStats) => void;
   onReady: (view: EditorView | null) => void;
+  /** Cursor offset to apply along with the next content swap, or null. */
+  pendingCursor: number | null;
+  /** Called once `pendingCursor` has been applied. */
+  onCursorRestored: () => void;
 };
 
 /**
@@ -44,6 +48,8 @@ export function MarkdownEditor({
   onChange,
   onStatsChange,
   onReady,
+  pendingCursor,
+  onCursorRestored,
 }: MarkdownEditorProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -53,10 +59,12 @@ export function MarkdownEditor({
   // rather than during render, which React does not allow.
   const onChangeRef = useRef(onChange);
   const onStatsChangeRef = useRef(onStatsChange);
+  const onCursorRestoredRef = useRef(onCursorRestored);
 
   useEffect(() => {
     onChangeRef.current = onChange;
     onStatsChangeRef.current = onStatsChange;
+    onCursorRestoredRef.current = onCursorRestored;
   });
 
   // Settings are read through a ref for the same reason: only the initial
@@ -122,20 +130,35 @@ export function MarkdownEditor({
 
   // Push external content changes (open, new, revert) into the editor without
   // disturbing it when the change originated from typing.
+  //
+  // `pendingCursor` is set in the same render as the content it belongs to
+  // (session restore), so both arrive here together.
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
 
     const current = view.state.doc.toString();
-    if (current === content) return;
+    const swapped = current !== content;
+    if (!swapped && pendingCursor === null) return;
+
+    // A document swap normally starts at the top with a collapsed selection
+    // rather than trying to preserve a position from a different file.
+    const anchor =
+      pendingCursor === null ? 0 : Math.min(pendingCursor, content.length);
 
     view.dispatch({
-      changes: { from: 0, to: view.state.doc.length, insert: content },
-      // A document swap should start at the top with a collapsed selection
-      // rather than trying to preserve a position from a different file.
-      selection: { anchor: 0 },
+      changes: swapped
+        ? { from: 0, to: view.state.doc.length, insert: content }
+        : undefined,
+      selection: { anchor },
+      effects:
+        pendingCursor === null
+          ? undefined
+          : EditorView.scrollIntoView(anchor, { y: "center" }),
     });
-  }, [content]);
+
+    if (pendingCursor !== null) onCursorRestoredRef.current();
+  }, [content, pendingCursor]);
 
   useEffect(() => {
     viewRef.current?.dispatch({

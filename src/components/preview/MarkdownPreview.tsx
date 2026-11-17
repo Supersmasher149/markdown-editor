@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type Ref } from "react";
 import { renderMarkdown } from "./markdownRenderer";
 import { openExternalUrl } from "../../services/fileService";
 import "./preview.css";
@@ -8,6 +8,8 @@ export const PREVIEW_DEBOUNCE_MS = 150;
 
 type MarkdownPreviewProps = {
   content: string;
+  /** The scrolling element, for keeping it in step with the editor. */
+  scrollRef?: Ref<HTMLDivElement>;
 };
 
 /**
@@ -17,7 +19,7 @@ type MarkdownPreviewProps = {
  * never waits on a Markdown parse. The HTML is injected via `innerHTML` because
  * it is a sanitized string rather than a React tree.
  */
-export function MarkdownPreview({ content }: MarkdownPreviewProps) {
+export function MarkdownPreview({ content, scrollRef }: MarkdownPreviewProps) {
   const [html, setHtml] = useState<string>("");
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -27,7 +29,7 @@ export function MarkdownPreview({ content }: MarkdownPreviewProps) {
     let cancelled = false;
 
     const timer = setTimeout(() => {
-      const rendered = renderMarkdown(content);
+      const rendered = renderMarkdown(content, { sourceLines: true });
       if (!cancelled) setHtml(rendered);
     }, PREVIEW_DEBOUNCE_MS);
 
@@ -69,7 +71,7 @@ export function MarkdownPreview({ content }: MarkdownPreviewProps) {
   }, []);
 
   return (
-    <div className="preview-scroll" data-testid="preview">
+    <div className="preview-scroll" data-testid="preview" ref={scrollRef}>
       <div
         className="preview-body markdown-body"
         ref={containerRef}

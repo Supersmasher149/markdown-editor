@@ -188,3 +188,26 @@ describe("HTML sanitization", () => {
     );
   });
 });
+
+describe("source line markers", () => {
+  it("are omitted unless asked for", () => {
+    expect(renderMarkdown("# Title")).not.toContain("data-source-line");
+  });
+
+  it("tag each block with its 0-based starting line", () => {
+    const html = renderMarkdown("# Title\n\nPara\n\n- item", {
+      sourceLines: true,
+    });
+    expect(html).toContain('<h1 data-source-line="0">');
+    expect(html).toContain('<p data-source-line="2">');
+    expect(html).toContain('<ul data-source-line="4">');
+  });
+
+  it("survive sanitizing while other data attributes do not", () => {
+    // Raw HTML is escaped, so a hand-written attribute never reaches the DOM.
+    const html = renderMarkdown('<p data-evil="1">x</p>', {
+      sourceLines: true,
+    });
+    expect(html).not.toMatch(/<[a-z][^>]*data-evil/);
+  });
+});

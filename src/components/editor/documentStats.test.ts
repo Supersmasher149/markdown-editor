@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { countCharacters, countWords } from "./documentStats";
+import { countCharacters, countWords, goalProgress } from "./documentStats";
 
 describe("word count", () => {
   it("counts plain prose", () => {
@@ -75,5 +75,23 @@ describe("character count", () => {
     expect(countCharacters("# Hi")).toBe(4);
     expect(countCharacters("a\nb")).toBe(3);
     expect(countCharacters("")).toBe(0);
+  });
+});
+
+describe("word goal progress", () => {
+  it("is off when the goal is zero", () => {
+    expect(goalProgress(500, 0)).toBeNull();
+  });
+
+  it("reports partial progress", () => {
+    expect(goalProgress(500, 2000)).toEqual({ ratio: 0.25, reached: false });
+  });
+
+  it("is reached exactly at the goal", () => {
+    expect(goalProgress(2000, 2000)).toEqual({ ratio: 1, reached: true });
+  });
+
+  it("caps the bar but stays reached past the goal", () => {
+    expect(goalProgress(3000, 2000)).toEqual({ ratio: 1, reached: true });
   });
 });

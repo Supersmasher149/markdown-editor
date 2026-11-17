@@ -5,6 +5,7 @@ import {
   FONT_SIZE_MIN,
   TAB_SIZE_MAX,
   TAB_SIZE_MIN,
+  WORD_GOAL_MAX,
 } from "../../stores/settingsStore";
 
 type SettingsPanelProps = {
@@ -165,6 +166,28 @@ export function SettingsPanel({
               </span>
             </label>
 
+            <label className="settings__row">
+              <span className="settings__label">
+                Word goal
+                <span className="settings__hint">
+                  Shown in the status bar; 0 turns it off
+                </span>
+              </span>
+              <span className="settings__control">
+                <input
+                  type="number"
+                  min={0}
+                  max={WORD_GOAL_MAX}
+                  step={100}
+                  value={settings.wordGoal}
+                  onChange={(event) =>
+                    onChange({ wordGoal: Number(event.target.value) })
+                  }
+                />
+                <span className="settings__value">words</span>
+              </span>
+            </label>
+
             <ToggleRow
               label="Soft wrapping"
               hint="Wrap long lines instead of scrolling sideways"
@@ -209,10 +232,24 @@ export function SettingsPanel({
             </div>
 
             <ToggleRow
+              label="Sync scrolling"
+              hint="Keep the editor and preview together in Split view"
+              checked={settings.syncScroll}
+              onChange={(syncScroll) => onChange({ syncScroll })}
+            />
+
+            <ToggleRow
               label="Remember last layout"
               hint="Reopen in whichever layout you were last using"
               checked={settings.rememberLayout}
               onChange={(rememberLayout) => onChange({ rememberLayout })}
+            />
+
+            <ToggleRow
+              label="Reopen last file on launch"
+              hint="Pick up where you left off, cursor included"
+              checked={settings.reopenLastFile}
+              onChange={(reopenLastFile) => onChange({ reopenLastFile })}
             />
 
             <ToggleRow

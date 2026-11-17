@@ -15,6 +15,7 @@ export type ShortcutHandlers = {
   onOpen: () => void;
   onSave: () => void;
   onSaveAs: () => void;
+  onPrint: () => void;
   onToggleSettings: () => void;
 };
 
@@ -56,6 +57,11 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers): void {
           if (event.shiftKey) return;
           event.preventDefault();
           handlersRef.current.onToggleSettings();
+          break;
+        case "p":
+          if (event.shiftKey) return;
+          event.preventDefault();
+          handlersRef.current.onPrint();
           break;
         default:
           // Command-F, Command-Z, Command-B and friends belong to CodeMirror.

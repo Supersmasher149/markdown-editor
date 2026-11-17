@@ -5,6 +5,7 @@ import {
   FONT_SIZE_MIN,
   SPLIT_MAX,
   SPLIT_MIN,
+  WORD_GOAL_MAX,
   validateSettings,
 } from "./settingsStore";
 
@@ -126,5 +127,69 @@ describe("settings validation", () => {
 
     expect(result).toEqual(DEFAULT_SETTINGS);
     expect(result).not.toHaveProperty("somethingElse");
+  });
+});
+
+describe("session and goal settings", () => {
+  it("fills in the new fields for a settings file that predates them", () => {
+    const { recentFiles, reopenLastFile, lastFile, wordGoal, ...older } =
+      DEFAULT_SETTINGS;
+    void [recentFiles, reopenLastFile, lastFile, wordGoal];
+
+    expect(validateSettings({ ...older, fontSize: 18 })).toEqual({
+      ...DEFAULT_SETTINGS,
+      fontSize: 18,
+    });
+  });
+
+  it("keeps only absolute, unique recent paths, capped at ten", () => {
+    const many = Array.from({ length: 15 }, (_, i) => `/n${i}.md`);
+    const result = validateSettings({
+      ...DEFAULT_SETTINGS,
+      recentFiles: ["/a.md", "relative.md", 7, "/a.md", "", ...many],
+    });
+
+    expect(result.recentFiles[0]).toBe("/a.md");
+    expect(result.recentFiles).toHaveLength(10);
+    expect(result.recentFiles).not.toContain("relative.md");
+    expect(new Set(result.recentFiles).size).toBe(10);
+  });
+
+  it("rejects a recent-files value that is not an array", () => {
+    expect(
+      validateSettings({ ...DEFAULT_SETTINGS, recentFiles: "/a.md" })
+        .recentFiles,
+    ).toEqual([]);
+  });
+
+  it("accepts a well-formed last file", () => {
+    const lastFile = { path: "/notes/today.md", anchor: 42 };
+    expect(
+      validateSettings({ ...DEFAULT_SETTINGS, lastFile }).lastFile,
+    ).toEqual(lastFile);
+  });
+
+  it.each([
+    ["a relative path", { path: "today.md", anchor: 0 }],
+    ["a negative anchor", { path: "/today.md", anchor: -1 }],
+    ["a fractional anchor", { path: "/today.md", anchor: 1.5 }],
+    ["a missing anchor", { path: "/today.md" }],
+    ["a string", "/today.md"],
+  ])("drops a last file with %s", (_label, lastFile) => {
+    expect(
+      validateSettings({ ...DEFAULT_SETTINGS, lastFile }).lastFile,
+    ).toBeNull();
+  });
+
+  it("clamps the word goal and treats junk as off", () => {
+    expect(
+      validateSettings({ ...DEFAULT_SETTINGS, wordGoal: -5 }).wordGoal,
+    ).toBe(0);
+    expect(
+      validateSettings({ ...DEFAULT_SETTINGS, wordGoal: 1e9 }).wordGoal,
+    ).toBe(WORD_GOAL_MAX);
+    expect(
+      validateSettings({ ...DEFAULT_SETTINGS, wordGoal: "lots" }).wordGoal,
+    ).toBe(0);
   });
 });
