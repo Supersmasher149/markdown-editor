@@ -82,6 +82,29 @@ function installTaskLists(md: MarkdownIt): void {
   };
 }
 
+type RenderEnv = { sourceLines?: boolean };
+
+/** Attribute carrying the 0-based source line a rendered block starts on. */
+export const SOURCE_LINE_ATTR = "data-source-line";
+
+/**
+ * Tag every opening block token with the source line it came from, so the
+ * preview can be scrolled in step with the editor. Opt-in per render through
+ * `env`, so printed and exported HTML stays clean.
+ */
+function installSourceLines(md: MarkdownIt): void {
+  md.core.ruler.push("source_lines", (state) => {
+    const env = state.env as RenderEnv | undefined;
+    if (!env?.sourceLines) return true;
+    for (const token of state.tokens) {
+      if (token.block && token.nesting === 1 && token.map) {
+        token.attrSet(SOURCE_LINE_ATTR, String(token.map[0]));
+      }
+    }
+    return true;
+  });
+}
+
 function createRenderer(): MarkdownIt {
   // Annotated because `highlight` below refers to `md`, which would otherwise
   // make the initializer circular from the type checker's point of view.
@@ -106,6 +129,7 @@ function createRenderer(): MarkdownIt {
 
   md.enable(["table", "strikethrough"]);
   installTaskLists(md);
+  installSourceLines(md);
 
   return md;
 }
@@ -119,7 +143,7 @@ export function getRenderer(): MarkdownIt {
 /**
  * DOMPurify allowlist, covering exactly the output the renderer above produces.
  *
- * Anything else - `style`, `iframe`, `form`, event handlers, data attributes -
+ * Anything else - `style`, `iframe`, `form`, event handlers, other data attributes -
  * is stripped. `javascript:` and similar active URLs are rejected by
  * DOMPurify's own URI check, and the preview additionally validates the scheme
  * of every link before opening it.
@@ -168,6 +192,9 @@ const PURIFY_CONFIG = {
     "align",
     "colspan",
     "rowspan",
+    // The one data attribute allowed, named explicitly. It only ever holds a
+    // line number the renderer wrote, since raw HTML in the source is escaped.
+    SOURCE_LINE_ATTR,
   ],
   ALLOW_DATA_ATTR: false,
   ALLOW_ARIA_ATTR: false,
@@ -180,8 +207,15 @@ const PURIFY_CONFIG = {
  *
  * The result is the only markup in the app derived from document content, and
  * the only string ever assigned to `innerHTML`.
+ *
+ * `sourceLines` marks each block with the source line it starts on, for scroll
+ * sync between the editor and the preview.
  */
-export function renderMarkdown(source: string): string {
-  const rawHtml = getRenderer().render(source);
+export function renderMarkdown(
+  source: string,
+  options: { sourceLines?: boolean } = {},
+): string {
+  const env: RenderEnv = { sourceLines: options.sourceLines === true };
+  const rawHtml = getRenderer().render(source, env);
   return DOMPurify.sanitize(rawHtml, PURIFY_CONFIG);
 }
