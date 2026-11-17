@@ -14,9 +14,14 @@ It works entirely offline. There are no accounts and no telemetry; the only thin
 
 - Create, open, edit, and save `.md`, `.markdown`, and `.txt` files
 - Drag a file onto the window to open it, same as File → Open
+- Open Recent menu (the ▾ beside Open) with the last ten files
+- Reopens the last file on launch, with the cursor where you left it
 - Markdown syntax highlighting, line numbers, bracket matching, multiple selections, search, and undo/redo
 - Live rendered preview with syntax-highlighted code blocks, tables, and task lists
 - Editor-only, split, and preview-only layouts with a draggable divider
+- Paste a URL over selected text to turn it into a Markdown link
+- Insert today's date or a date-time stamp
+- Optional word goal with a progress bar in the status bar
 - Formatting commands for bold, italic, inline code, links, headings, blockquotes, lists, task lists, code blocks, and horizontal rules
 - Unsaved-change protection when creating, opening, or closing
 - Light, dark, and system themes; configurable font size, tab size, soft wrapping, and line numbers
@@ -137,6 +142,8 @@ See [Tauri's macOS signing guide](https://tauri.app/distribute/sign/macos/).
 | `⌘⇧1` … `⌘⇧3` | Heading 1–3 |
 | `⌘⇧8` / `⌘⇧7` | Bullet / numbered list |
 | `⌘⇧.` | Blockquote |
+| `⌘⇧D` | Insert date (`2026-11-17`) |
+| `⌥⌘⇧D` | Insert date and time (`2026-11-17 14:32`) |
 
 File-level shortcuts are bound on the window so they work regardless of focus. Editing shortcuts belong to CodeMirror. No standard system shortcut is overridden.
 
@@ -238,7 +245,7 @@ Roughly in order of value relative to effort:
 
 ## Testing
 
-125 frontend tests and 19 Rust tests, focused on the parts where a mistake is expensive rather than on line coverage:
+156 frontend tests and 19 Rust tests, focused on the parts where a mistake is expensive rather than on line coverage:
 
 - Dirty-state derivation and store transitions, including the case where the user keeps typing during a save
 - Word and character counting against Markdown syntax

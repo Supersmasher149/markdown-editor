@@ -21,10 +21,16 @@ type UiState = {
   confirmRequest: ConfirmRequest | null;
   /** True while a file is being dragged over the window. */
   isDragActive: boolean;
+  /**
+   * Cursor offset to apply when the next document lands in the editor, used to
+   * restore the last session. Consumed (reset to null) by the editor.
+   */
+  pendingCursor: number | null;
 
   setLayout: (layout: LayoutMode) => void;
   setSettingsOpen: (open: boolean) => void;
   setDragActive: (active: boolean) => void;
+  setPendingCursor: (anchor: number | null) => void;
 
   /**
    * Ask the user what to do about unsaved changes.
@@ -41,10 +47,12 @@ export const useUiStore = create<UiState>((set, get) => ({
   isSettingsOpen: false,
   confirmRequest: null,
   isDragActive: false,
+  pendingCursor: null,
 
   setLayout: (layout) => set({ layout }),
   setSettingsOpen: (isSettingsOpen) => set({ isSettingsOpen }),
   setDragActive: (isDragActive) => set({ isDragActive }),
+  setPendingCursor: (pendingCursor) => set({ pendingCursor }),
 
   requestDiscardChoice: (fileName) => {
     if (get().confirmRequest !== null) return Promise.resolve("cancel");

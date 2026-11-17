@@ -64,6 +64,21 @@ export type AppSettings = {
   confirmDiscard: boolean;
   /** Editor pane width in split view, as a fraction between 0 and 1. */
   splitPosition: number;
+  /** Most recently opened or saved files, newest first. */
+  recentFiles: string[];
+  /** Reopen `lastFile` at its cursor position when the app starts. */
+  reopenLastFile: boolean;
+  /** The file open when the app last ran, or null if it was untitled. */
+  lastFile: LastFile | null;
+  /** Target word count shown in the status bar; 0 turns it off. */
+  wordGoal: number;
+};
+
+/** Where the user left off, for restoring on the next launch. */
+export type LastFile = {
+  path: string;
+  /** Cursor offset into the document. */
+  anchor: number;
 };
 
 /** Cursor position and document statistics shown in the status bar. */

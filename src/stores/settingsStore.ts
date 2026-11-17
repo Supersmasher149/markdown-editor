@@ -1,6 +1,7 @@
 import { create } from "zustand";
-import type { AppSettings, LayoutMode, ThemeSetting } from "../types";
+import type { AppSettings, LastFile, LayoutMode, ThemeSetting } from "../types";
 import * as fileService from "../services/fileService";
+import { MAX_RECENT_FILES } from "../services/recentFiles";
 
 /**
  * Settings are stored as JSON written by an untrusted-ish source (a file the
@@ -22,6 +23,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
   rememberLayout: true,
   confirmDiscard: true,
   splitPosition: 0.5,
+  recentFiles: [],
+  reopenLastFile: true,
+  lastFile: null,
+  wordGoal: 0,
 };
 
 /** Bounds for the numeric settings, shared by the UI controls and validation. */
@@ -32,6 +37,7 @@ export const TAB_SIZE_MAX = 8;
 /** Keeps both panes usable at the 800px minimum window width. */
 export const SPLIT_MIN = 0.2;
 export const SPLIT_MAX = 0.8;
+export const WORD_GOAL_MAX = 1_000_000;
 
 const THEMES: readonly ThemeSetting[] = ["system", "light", "dark"];
 const LAYOUTS: readonly LayoutMode[] = ["editor", "split", "preview"];
@@ -53,6 +59,27 @@ function intOr(
 
 function boolOr(value: unknown, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
+}
+
+function isAbsolutePath(value: unknown): value is string {
+  return typeof value === "string" && value.startsWith("/");
+}
+
+/** Absolute paths only, deduplicated, newest first, capped. */
+function recentFilesOr(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const paths = value.filter(isAbsolutePath);
+  return [...new Set(paths)].slice(0, MAX_RECENT_FILES);
+}
+
+function lastFileOr(value: unknown): LastFile | null {
+  if (typeof value !== "object" || value === null) return null;
+  const { path, anchor } = value as Record<string, unknown>;
+  if (!isAbsolutePath(path)) return null;
+  if (typeof anchor !== "number" || !Number.isInteger(anchor) || anchor < 0) {
+    return null;
+  }
+  return { path, anchor };
 }
 
 function oneOf<T extends string>(
@@ -126,6 +153,18 @@ export function validateSettings(raw: unknown): AppSettings {
       DEFAULT_SETTINGS.confirmDiscard,
     ),
     splitPosition,
+    recentFiles: recentFilesOr(input.recentFiles),
+    reopenLastFile: boolOr(
+      input.reopenLastFile,
+      DEFAULT_SETTINGS.reopenLastFile,
+    ),
+    lastFile: lastFileOr(input.lastFile),
+    wordGoal: intOr(
+      input.wordGoal,
+      DEFAULT_SETTINGS.wordGoal,
+      0,
+      WORD_GOAL_MAX,
+    ),
   };
 }
 

@@ -41,6 +41,8 @@ import { oneDark } from "@codemirror/theme-one-dark";
 import { tags } from "@lezer/highlight";
 import type { AppSettings, ResolvedTheme } from "../../types";
 import { applyFormat, type FormatName } from "./formattingCommands";
+import { insertDate } from "./insertDate";
+import { smartPaste } from "./smartPaste";
 
 /**
  * CodeMirror configuration.
@@ -182,12 +184,17 @@ const FORMAT_KEYS: ReadonlyArray<{ key: string; format: FormatName }> = [
   { key: "Mod-Shift-7", format: "orderedList" },
 ];
 
-const formattingKeymap = keymap.of(
-  FORMAT_KEYS.map(({ key, format }) => ({
+const formattingKeymap = keymap.of([
+  ...FORMAT_KEYS.map(({ key, format }) => ({
     key,
     run: (view: EditorView) => applyFormat(view, format),
   })),
-);
+  { key: "Mod-Shift-d", run: (view: EditorView) => insertDate(view, false) },
+  {
+    key: "Mod-Alt-Shift-d",
+    run: (view: EditorView) => insertDate(view, true),
+  },
+]);
 
 /**
  * Extensions that never change for the life of the editor.
@@ -212,6 +219,7 @@ export function baseExtensions(): Extension[] {
     search({ top: true }),
     markdown({ base: markdownLanguage, addKeymap: true }),
     EditorView.contentAttributes.of({ spellcheck: "true" }),
+    smartPaste,
     // Our formatting bindings must outrank the default keymap, which claims
     // some of the same chords.
     Prec.highest(formattingKeymap),

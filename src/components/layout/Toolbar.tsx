@@ -1,16 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormatName } from "../editor/formattingCommands";
 import type { LayoutMode } from "../../types";
+import { displayName } from "../../services/recentFiles";
 
 type ToolbarProps = {
   layout: LayoutMode;
   canReveal: boolean;
   isSaving: boolean;
+  recentFiles: readonly string[];
   onNew: () => void;
   onOpen: () => void;
+  onOpenRecent: (path: string) => void;
+  onClearRecent: () => void;
   onSave: () => void;
   onLayoutChange: (layout: LayoutMode) => void;
   onFormat: (format: FormatName) => void;
+  onInsertDate: (withTime: boolean) => void;
   onReveal: () => void;
   onPrint: () => void;
   onOpenSettings: () => void;
@@ -51,36 +56,45 @@ const LAYOUTS: ReadonlyArray<{
   { mode: "preview", label: "Preview", title: "Preview only" },
 ];
 
+type MenuName = "recent" | "format";
+
 export function Toolbar({
   layout,
   canReveal,
   isSaving,
+  recentFiles,
   onNew,
   onOpen,
+  onOpenRecent,
+  onClearRecent,
   onSave,
   onLayoutChange,
   onFormat,
+  onInsertDate,
   onReveal,
   onPrint,
   onOpenSettings,
 }: ToolbarProps) {
-  const [isMenuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement | null>(null);
+  // At most one menu is open at a time, as with native menus.
+  const [openMenu, setOpenMenu] = useState<MenuName | null>(null);
+  const recentMenuRef = useRef<HTMLDivElement | null>(null);
+  const formatMenuRef = useRef<HTMLDivElement | null>(null);
 
   // Dismiss the menu on an outside click or Escape, the way a native menu does.
   useEffect(() => {
-    if (!isMenuOpen) return;
+    if (openMenu === null) return;
+    const activeRef = openMenu === "recent" ? recentMenuRef : formatMenuRef;
 
     const handlePointerDown = (event: PointerEvent) => {
       if (
         event.target instanceof Node &&
-        !menuRef.current?.contains(event.target)
+        !activeRef.current?.contains(event.target)
       ) {
-        setMenuOpen(false);
+        setOpenMenu(null);
       }
     };
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMenuOpen(false);
+      if (event.key === "Escape") setOpenMenu(null);
     };
 
     window.addEventListener("pointerdown", handlePointerDown);
@@ -89,11 +103,15 @@ export function Toolbar({
       window.removeEventListener("pointerdown", handlePointerDown);
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isMenuOpen]);
+  }, [openMenu]);
 
-  const runFormat = (format: FormatName) => {
-    onFormat(format);
-    setMenuOpen(false);
+  const toggleMenu = (menu: MenuName) =>
+    setOpenMenu((current) => (current === menu ? null : menu));
+
+  /** Run a menu item's action and close the menu. */
+  const choose = (action: () => void) => {
+    action();
+    setOpenMenu(null);
   };
 
   return (
@@ -105,6 +123,50 @@ export function Toolbar({
         <button type="button" onClick={onOpen} title="Open…  ⌘O">
           Open
         </button>
+        <div className="toolbar__menu-wrap" ref={recentMenuRef}>
+          <button
+            type="button"
+            className="toolbar__recent"
+            onClick={() => toggleMenu("recent")}
+            aria-haspopup="menu"
+            aria-expanded={openMenu === "recent"}
+            aria-label="Open Recent"
+            title="Open Recent"
+          >
+            ▾
+          </button>
+
+          {openMenu === "recent" && (
+            <div className="toolbar__menu" role="menu">
+              {recentFiles.length === 0 ? (
+                <span className="toolbar__menu-empty">No recent files</span>
+              ) : (
+                <>
+                  {recentFiles.map((path) => (
+                    <button
+                      key={path}
+                      type="button"
+                      role="menuitem"
+                      className="toolbar__menu-item--recent"
+                      title={path}
+                      onClick={() => choose(() => onOpenRecent(path))}
+                    >
+                      {displayName(path)}
+                    </button>
+                  ))}
+                  <div className="toolbar__menu-separator" role="separator" />
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => choose(onClearRecent)}
+                  >
+                    Clear Menu
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
         <button
           type="button"
           onClick={onSave}
@@ -131,29 +193,46 @@ export function Toolbar({
           </button>
         ))}
 
-        <div className="toolbar__menu-wrap" ref={menuRef}>
+        <div className="toolbar__menu-wrap" ref={formatMenuRef}>
           <button
             type="button"
-            onClick={() => setMenuOpen((open) => !open)}
+            onClick={() => toggleMenu("format")}
             aria-haspopup="menu"
-            aria-expanded={isMenuOpen}
+            aria-expanded={openMenu === "format"}
             title="More formatting"
           >
             ¶ ▾
           </button>
 
-          {isMenuOpen && (
+          {openMenu === "format" && (
             <div className="toolbar__menu" role="menu">
               {MENU_FORMATS.map(({ format, label }) => (
                 <button
                   key={format}
                   type="button"
                   role="menuitem"
-                  onClick={() => runFormat(format)}
+                  onClick={() => choose(() => onFormat(format))}
                 >
                   {label}
                 </button>
               ))}
+              <div className="toolbar__menu-separator" role="separator" />
+              <button
+                type="button"
+                role="menuitem"
+                title="⌘⇧D"
+                onClick={() => choose(() => onInsertDate(false))}
+              >
+                Insert date
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                title="⌥⌘⇧D"
+                onClick={() => choose(() => onInsertDate(true))}
+              >
+                Insert date &amp; time
+              </button>
             </div>
           )}
         </div>

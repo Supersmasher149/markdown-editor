@@ -219,6 +219,33 @@ body {
   box-shadow: var(--shadow);
 }
 
+.toolbar__menu-separator {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--border);
+}
+
+.toolbar__menu-empty {
+  padding: 4px 10px;
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+
+.toolbar__menu .toolbar__menu-item--recent {
+  display: block;
+  line-height: 26px;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toolbar__recent {
+  min-width: 0;
+  padding: 0 6px;
+  margin-left: -4px;
+}
+
 .toolbar__menu button {
   justify-content: flex-start;
   height: 26px;
@@ -371,6 +398,38 @@ body {
 
 .status-bar__metric {
   font-variant-numeric: tabular-nums;
+}
+
+.status-bar__goal {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-bar__goal progress {
+  width: 56px;
+  height: 4px;
+  appearance: none;
+  border: none;
+  border-radius: 2px;
+  overflow: hidden;
+  background: var(--border);
+}
+
+.status-bar__goal progress::-webkit-progress-bar {
+  background: var(--border);
+}
+
+.status-bar__goal progress::-webkit-progress-value {
+  background: var(--text-muted);
+}
+
+.status-bar__goal--reached {
+  color: var(--accent);
+}
+
+.status-bar__goal--reached progress::-webkit-progress-value {
+  background: var(--accent);
 }
 
 .status-bar__file {

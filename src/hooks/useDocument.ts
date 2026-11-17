@@ -4,6 +4,7 @@ import { useSettingsStore } from "../stores/settingsStore";
 import { useUiStore } from "../stores/uiStore";
 import * as fileService from "../services/fileService";
 import { saveDocument, saveDocumentAs } from "../services/saveDocument";
+import type { AppError } from "../types";
 
 /**
  * The document lifecycle: new, open, save, save as, close, reveal.
@@ -49,14 +50,22 @@ export function useDocument() {
     useDocumentStore.getState().reset();
   }, [confirmSafeToReplace]);
 
-  /** Load the file at `path`, replacing the active document. */
+  /**
+   * Load the file at `path`, replacing the active document.
+   *
+   * Returns the error (already shown in the status bar) so callers can react
+   * to a specific failure, or null on success.
+   */
   const openPath = useCallback(
-    async (path: string): Promise<void> => {
+    async (path: string): Promise<AppError | null> => {
       try {
         const file = await fileService.readFile(path);
         useDocumentStore.getState().loadFromDisk(file);
+        return null;
       } catch (thrown) {
-        setError(fileService.toAppError(thrown));
+        const error = fileService.toAppError(thrown);
+        setError(error);
+        return error;
       }
     },
     [setError],
@@ -77,6 +86,23 @@ export function useDocument() {
     async (path: string): Promise<void> => {
       if (!(await confirmSafeToReplace())) return;
       await openPath(path);
+    },
+    [confirmSafeToReplace, openPath],
+  );
+
+  /** Open an entry from the recent-files menu. */
+  const openRecent = useCallback(
+    async (path: string): Promise<void> => {
+      if (!(await confirmSafeToReplace())) return;
+
+      const error = await openPath(path);
+      // A file that no longer exists has no business staying in the menu.
+      if (error?.code === "FILE_NOT_FOUND") {
+        const { settings, update } = useSettingsStore.getState();
+        update({
+          recentFiles: settings.recentFiles.filter((entry) => entry !== path),
+        });
+      }
     },
     [confirmSafeToReplace, openPath],
   );
@@ -111,6 +137,7 @@ export function useDocument() {
     newDocument,
     openFile,
     openDroppedFile,
+    openRecent,
     save,
     saveAs,
     closeDocument,
