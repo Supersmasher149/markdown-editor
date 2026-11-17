@@ -72,6 +72,8 @@ export type AppSettings = {
   lastFile: LastFile | null;
   /** Target word count shown in the status bar; 0 turns it off. */
   wordGoal: number;
+  /** Keep the editor and preview scrolled together in split view. */
+  syncScroll: boolean;
 };
 
 /** Where the user left off, for restoring on the next launch. */

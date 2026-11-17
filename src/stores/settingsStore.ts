@@ -27,6 +27,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   reopenLastFile: true,
   lastFile: null,
   wordGoal: 0,
+  syncScroll: true,
 };
 
 /** Bounds for the numeric settings, shared by the UI controls and validation. */
@@ -165,6 +166,7 @@ export function validateSettings(raw: unknown): AppSettings {
       0,
       WORD_GOAL_MAX,
     ),
+    syncScroll: boolOr(input.syncScroll, DEFAULT_SETTINGS.syncScroll),
   };
 }
 

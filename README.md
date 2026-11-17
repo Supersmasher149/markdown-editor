@@ -19,6 +19,7 @@ It works entirely offline. There are no accounts and no telemetry; the only thin
 - Markdown syntax highlighting, line numbers, bracket matching, multiple selections, search, and undo/redo
 - Live rendered preview with syntax-highlighted code blocks, tables, and task lists
 - Editor-only, split, and preview-only layouts with a draggable divider
+- Synced scrolling between editor and preview in split view (View ▾ → Sync Scrolling, on by default)
 - Paste a URL over selected text to turn it into a Markdown link
 - Insert today's date or a date-time stamp
 - Optional word goal with a progress bar in the status bar

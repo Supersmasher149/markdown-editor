@@ -219,6 +219,17 @@ body {
   box-shadow: var(--shadow);
 }
 
+/* Opens leftwards, for menus near the right edge of the window. */
+.toolbar__menu--end {
+  left: auto;
+  right: 0;
+}
+
+.toolbar__menu-check {
+  display: inline-block;
+  width: 1.1em;
+}
+
 .toolbar__menu-separator {
   height: 1px;
   margin: 4px 6px;

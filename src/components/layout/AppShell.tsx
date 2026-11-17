@@ -15,6 +15,7 @@ import { useWindowTitle } from "../../hooks/useWindowTitle";
 import { useCloseProtection } from "../../hooks/useCloseProtection";
 import { useFileDrop } from "../../hooks/useFileDrop";
 import { useSession } from "../../hooks/useSession";
+import { useScrollSync } from "../../hooks/useScrollSync";
 import { insertDate } from "../editor/insertDate";
 import { useDocumentStore } from "../../stores/documentStore";
 import { useUiStore } from "../../stores/uiStore";
@@ -65,11 +66,17 @@ export function AppShell() {
 
   const [stats, setStats] = useState<DocumentStats>(EMPTY_STATS);
   const editorViewRef = useRef<EditorView | null>(null);
+  const previewScrollRef = useRef<HTMLDivElement | null>(null);
 
   useWindowTitle(document);
   useCloseProtection();
   useFileDrop(openDroppedFile);
   useSession(editorViewRef, `${stats.line}:${stats.column}`);
+  useScrollSync(
+    settings.syncScroll && layout === "split",
+    editorViewRef,
+    previewScrollRef,
+  );
 
   // Adopt the stored layout once, when settings finish loading. Later changes
   // to `defaultLayout` come from the user switching layouts, and re-applying
@@ -127,6 +134,7 @@ export function AppShell() {
     <div className="app-shell">
       <Toolbar
         layout={layout}
+        syncScroll={settings.syncScroll}
         canReveal={document.filePath !== null}
         isSaving={document.isSaving}
         recentFiles={settings.recentFiles}
@@ -136,6 +144,7 @@ export function AppShell() {
         onClearRecent={() => update({ recentFiles: [] })}
         onSave={() => void save()}
         onLayoutChange={handleLayoutChange}
+        onSyncScrollChange={(syncScroll) => update({ syncScroll })}
         onFormat={handleFormat}
         onInsertDate={handleInsertDate}
         onReveal={() => void revealInFinder()}
@@ -161,7 +170,12 @@ export function AppShell() {
               onCursorRestored={handleCursorRestored}
             />
           }
-          preview={<MarkdownPreview content={document.content} />}
+          preview={
+            <MarkdownPreview
+              content={document.content}
+              scrollRef={previewScrollRef}
+            />
+          }
         />
       </main>
 

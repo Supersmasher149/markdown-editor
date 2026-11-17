@@ -232,6 +232,13 @@ export function SettingsPanel({
             </div>
 
             <ToggleRow
+              label="Sync scrolling"
+              hint="Keep the editor and preview together in Split view"
+              checked={settings.syncScroll}
+              onChange={(syncScroll) => onChange({ syncScroll })}
+            />
+
+            <ToggleRow
               label="Remember last layout"
               hint="Reopen in whichever layout you were last using"
               checked={settings.rememberLayout}

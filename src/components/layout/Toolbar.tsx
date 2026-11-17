@@ -5,6 +5,7 @@ import { displayName } from "../../services/recentFiles";
 
 type ToolbarProps = {
   layout: LayoutMode;
+  syncScroll: boolean;
   canReveal: boolean;
   isSaving: boolean;
   recentFiles: readonly string[];
@@ -14,6 +15,7 @@ type ToolbarProps = {
   onClearRecent: () => void;
   onSave: () => void;
   onLayoutChange: (layout: LayoutMode) => void;
+  onSyncScrollChange: (syncScroll: boolean) => void;
   onFormat: (format: FormatName) => void;
   onInsertDate: (withTime: boolean) => void;
   onReveal: () => void;
@@ -56,10 +58,11 @@ const LAYOUTS: ReadonlyArray<{
   { mode: "preview", label: "Preview", title: "Preview only" },
 ];
 
-type MenuName = "recent" | "format";
+type MenuName = "recent" | "format" | "view";
 
 export function Toolbar({
   layout,
+  syncScroll,
   canReveal,
   isSaving,
   recentFiles,
@@ -69,6 +72,7 @@ export function Toolbar({
   onClearRecent,
   onSave,
   onLayoutChange,
+  onSyncScrollChange,
   onFormat,
   onInsertDate,
   onReveal,
@@ -79,11 +83,16 @@ export function Toolbar({
   const [openMenu, setOpenMenu] = useState<MenuName | null>(null);
   const recentMenuRef = useRef<HTMLDivElement | null>(null);
   const formatMenuRef = useRef<HTMLDivElement | null>(null);
+  const viewMenuRef = useRef<HTMLDivElement | null>(null);
 
   // Dismiss the menu on an outside click or Escape, the way a native menu does.
   useEffect(() => {
     if (openMenu === null) return;
-    const activeRef = openMenu === "recent" ? recentMenuRef : formatMenuRef;
+    const activeRef = {
+      recent: recentMenuRef,
+      format: formatMenuRef,
+      view: viewMenuRef,
+    }[openMenu];
 
     const handlePointerDown = (event: PointerEvent) => {
       if (
@@ -253,6 +262,35 @@ export function Toolbar({
             {label}
           </button>
         ))}
+      </div>
+
+      <div className="toolbar__menu-wrap" ref={viewMenuRef}>
+        <button
+          type="button"
+          onClick={() => toggleMenu("view")}
+          aria-haspopup="menu"
+          aria-expanded={openMenu === "view"}
+          title="View options"
+        >
+          View ▾
+        </button>
+
+        {openMenu === "view" && (
+          <div className="toolbar__menu toolbar__menu--end" role="menu">
+            <button
+              type="button"
+              role="menuitemcheckbox"
+              aria-checked={syncScroll}
+              title="Keep the editor and preview scrolled together in Split view"
+              onClick={() => choose(() => onSyncScrollChange(!syncScroll))}
+            >
+              <span className="toolbar__menu-check" aria-hidden="true">
+                {syncScroll ? "✓" : ""}
+              </span>
+              Sync Scrolling
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="toolbar__group">
